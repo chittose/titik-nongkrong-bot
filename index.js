@@ -176,7 +176,8 @@ client.on(Events.MessageCreate, async (message) => {
         );
         const row3 = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId('btn|item|GLOBAL').setLabel('🎁 Global Item').setStyle(ButtonStyle.Success),
-            new ButtonBuilder().setCustomId('btn|broadcast|GLOBAL').setLabel('📢 Global Broadcast').setStyle(ButtonStyle.Primary)
+            new ButtonBuilder().setCustomId('btn|broadcast|GLOBAL').setLabel('📢 Global Broadcast').setStyle(ButtonStyle.Primary),
+            new ButtonBuilder().setCustomId('btn|tag|GLOBAL').setLabel('🏷️ Global Set Tag/Name').setStyle(ButtonStyle.Primary)
         );
 
         await message.channel.send({ embeds: [embed], components: [row0, row1, row2, row3] });
@@ -234,6 +235,16 @@ client.on(Events.InteractionCreate, async (interaction) => {
         else if (cmd==='unban'||cmd==='kill'||cmd==='heal') { m.setTitle('Target Action'); m.addComponents(new ActionRowBuilder().addComponents(tIn())); }
         else if (cmd==='coin' || cmd==='removecoin') { m.setTitle(cmd==='coin' ? 'Give Coin' : 'Reduce Coin'); m.addComponents(new ActionRowBuilder().addComponents(tIn()), new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_amount').setLabel('Jumlah (Angka)').setStyle(TextInputStyle.Short).setRequired(true))); }
         else if (cmd==='broadcast') { m.setTitle('Broadcast'); m.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_message').setLabel('Pesan').setStyle(TextInputStyle.Paragraph).setRequired(true))); }
+        else if (cmd==='tag') {
+            m.setTitle('Set Tag & Name');
+            m.addComponents(
+                new ActionRowBuilder().addComponents(tIn()),
+                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_title').setLabel('Custom Title (Kosongi jika abaikan)').setStyle(TextInputStyle.Short).setRequired(false)),
+                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_dispname').setLabel('Display Name (Kosongi jika abaikan)').setStyle(TextInputStyle.Short).setRequired(false)),
+                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_rbtitle').setLabel('Rainbow Title? (Ketik: Ya/Tidak)').setStyle(TextInputStyle.Short).setRequired(false)),
+                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_rbname').setLabel('Rainbow Name? (Ketik: Ya/Tidak)').setStyle(TextInputStyle.Short).setRequired(false))
+            );
+        }
 
         await interaction.showModal(m);
     }
@@ -260,15 +271,36 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 new ButtonBuilder().setCustomId(`btn|item|${selectedJobId}`).setLabel('🎁 Server Item').setStyle(ButtonStyle.Success)
             );
             const row3 = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId(`btn|broadcast|${selectedJobId}`).setLabel('📢 Server Broadcast').setStyle(ButtonStyle.Primary)
+                new ButtonBuilder().setCustomId(`btn|broadcast|${selectedJobId}`).setLabel('📢 Server Broadcast').setStyle(ButtonStyle.Primary),
+                new ButtonBuilder().setCustomId(`btn|tag|${selectedJobId}`).setLabel('🏷️ Server Tag/Name').setStyle(ButtonStyle.Primary)
             );
 
             await interaction.editReply({ content: null, embeds: [embed], components: [row1, row2, row3] });
         }
         else if (interaction.customId.startsWith('select|tool|')) {
+            await interaction.deferUpdate();
             const selectedJobId = interaction.customId.split('|')[2];
             const selectedTool = interaction.values[0];
-            const modal = new ModalBuilder().setCustomId(`modalgiveitem|${selectedTool}|${selectedJobId}`).setTitle(`Give: ${selectedTool}`);
+            
+            const durationOptions = [
+                { label: 'Sesi (Hilang Saat Mati/Keluar)', value: 'Session', description: 'Item hilang otomatis saat playernya mati atau leave.' },
+                { label: '1 Menit', value: '1' },
+                { label: '5 Menit', value: '5' },
+                { label: '10 Menit', value: '10' },
+                { label: '30 Menit', value: '30' },
+                { label: 'Permanen (Simpan ke Inventory)', value: 'Permanent', description: 'Tersimpan abadi di database inventory player.' }
+            ];
+
+            const selectMenu = new StringSelectMenuBuilder().setCustomId(`select|duration|${selectedTool}|${selectedJobId}`).setPlaceholder('Pilih Durasi...').addOptions(durationOptions);
+            await interaction.editReply({ content: `Tool **${selectedTool}** dipilih.\nSekarang pilih Durasi:`, components: [new ActionRowBuilder().addComponents(selectMenu)], embeds: [] });
+        }
+        else if (interaction.customId.startsWith('select|duration|')) {
+            const parts = interaction.customId.split('|');
+            const selectedTool = parts[2];
+            const selectedJobId = parts[3];
+            const selectedDuration = interaction.values[0];
+
+            const modal = new ModalBuilder().setCustomId(`modalgiveitem|${selectedTool}|${selectedDuration}|${selectedJobId}`).setTitle(`Give: ${selectedTool.substring(0,20)}`);
             modal.addComponents(
                 new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_target').setLabel('Username Target').setStyle(TextInputStyle.Short).setRequired(true)),
                 new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_qty').setLabel('Jumlah').setStyle(TextInputStyle.Short).setValue("1").setRequired(true))
@@ -290,7 +322,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
         const parts = interaction.customId.split('|');
         p.Command = 'GiveItem';
         p.ItemId = parts[1];
-        if (parts[2] && parts[2] !== 'GLOBAL') p.TargetJobId = parts[2];
+        p.Duration = parts[2];
+        if (parts[3] && parts[3] !== 'GLOBAL') p.TargetJobId = parts[3];
         p.Quantity = parseInt(getVal('input_qty')) || 1;
     } 
     else if (interaction.customId.startsWith('modal|')) {
@@ -306,6 +339,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
             p.Command = 'GiveCoin'; 
         }
         else if (p.Command==='broadcast') { p.Message = getVal('input_message'); }
+        else if (p.Command==='tag') {
+            p.Title = getVal('input_title') || "";
+            p.DisplayName = getVal('input_dispname') || "";
+            let rbT = (getVal('input_rbtitle') || "").toLowerCase();
+            let rbN = (getVal('input_rbname') || "").toLowerCase();
+            p.RainbowTitle = rbT === 'ya' || rbT === 'yes' || rbT === 'y';
+            p.RainbowName = rbN === 'ya' || rbN === 'yes' || rbN === 'y';
+        }
 
         p.Command = p.Command.charAt(0).toUpperCase() + p.Command.slice(1);
     }

@@ -86,7 +86,12 @@ client.on(Events.MessageCreate, async (message) => {
     if (message.content === '!ping') {
         const sent = await message.reply('Pinging...');
         const latency = sent.createdTimestamp - message.createdTimestamp;
-        return sent.edit(`🏓 Pong!\n⏳ Bot Latency: **${latency}ms**\n💓 API Ping: **${client.ws.ping}ms**`);
+        await sent.edit(`🏓 Pong!\n⏳ Bot Latency: **${latency}ms**\n💓 API Ping: **${client.ws.ping}ms**`);
+        
+        // Hapus otomatis setelah 10 detik
+        message.delete().catch(()=>{});
+        setTimeout(() => sent.delete().catch(()=>{}), 10000);
+        return;
     }
 
     if (message.content === '!uptime') {
@@ -102,7 +107,12 @@ client.on(Events.MessageCreate, async (message) => {
         if (m > 0) timeString += `${m} menit, `;
         timeString += `${s} detik`;
         
-        return message.reply(`⏱️ **Bot Uptime:** ${timeString}\n📅 **Online Sejak:** <t:${Math.floor((Date.now() - (totalSeconds * 1000)) / 1000)}:R>`);
+        const sent = await message.reply(`⏱️ **Bot Uptime:** ${timeString}\n📅 **Online Sejak:** <t:${Math.floor((Date.now() - (totalSeconds * 1000)) / 1000)}:R>`);
+        
+        // Hapus otomatis setelah 10 detik
+        message.delete().catch(()=>{});
+        setTimeout(() => sent.delete().catch(()=>{}), 10000);
+        return;
     }
 
     if (message.content.startsWith('!clear')) {

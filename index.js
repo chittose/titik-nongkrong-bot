@@ -86,11 +86,18 @@ client.on(Events.MessageCreate, async (message) => {
     if (message.content === '!ping') {
         const sent = await message.reply('Pinging...');
         const latency = sent.createdTimestamp - message.createdTimestamp;
-        await sent.edit(`🏓 Pong!\n⏳ Bot Latency: **${latency}ms**\n💓 API Ping: **${client.ws.ping}ms**`);
+        
+        let serverInfo = "❌ Tidak ada server Roblox yang terhubung.";
+        if (activeServers.size > 0) {
+            const serverList = Array.from(activeServers.entries()).map(([jobId, data], i) => `> **Server ${i+1}:** \`${jobId.substring(0,8)}...\` (${data.players.length} Player)`).join('\n');
+            serverInfo = `✅ **${activeServers.size} Server Aktif:**\n${serverList}`;
+        }
+
+        await sent.edit(`🏓 **Pong!**\n⏳ Bot Latency: **${latency}ms**\n💓 API Ping: **${client.ws.ping}ms**\n\n${serverInfo}`);
         
         // Hapus otomatis setelah 10 detik
         message.delete().catch(()=>{});
-        setTimeout(() => sent.delete().catch(()=>{}), 10000);
+        setTimeout(() => sent.delete().catch(()=>{}), 15000); // 15 detik biar sempet baca
         return;
     }
 

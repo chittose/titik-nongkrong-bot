@@ -92,17 +92,27 @@ client.on(Events.MessageCreate, async (message) => {
         else if (process.env.RENDER_EXTERNAL_URL) hostName = "☁️ Render";
         else if (process.env.REPLIT_DOMAINS) hostName = "🌀 Replit";
 
+        let location = "Mencari lokasi...";
+        try {
+            const locRes = await axios.get('http://ip-api.com/json/', { timeout: 2000 });
+            if (locRes.data && locRes.data.country) {
+                location = `${locRes.data.city}, ${locRes.data.country} ${locRes.data.countryCode === 'SG' ? '🇸🇬' : '🌍'}`;
+            }
+        } catch(e) {
+            location = "Lokasi Tidak Diketahui";
+        }
+
         let serverInfo = "❌ Tidak ada server Roblox yang terhubung.";
         if (activeServers.size > 0) {
             const serverList = Array.from(activeServers.entries()).map(([jobId, data], i) => `> **Server ${i+1}:** \`${jobId.substring(0,8)}...\` (${data.players.length} Player)`).join('\n');
             serverInfo = `✅ **${activeServers.size} Server Aktif:**\n${serverList}`;
         }
 
-        await sent.edit(`🏓 **Pong!**\n⏳ Bot Latency: **${latency}ms**\n💓 API Ping: **${client.ws.ping}ms**\n🖥️ Bot Hosted on: **${hostName}**\n\n${serverInfo}`);
+        await sent.edit(`🏓 **Pong!**\n⏳ Bot Latency: **${latency}ms**\n💓 API Ping: **${client.ws.ping}ms**\n🖥️ Server Host: **${hostName}**\n📍 Lokasi: **${location}**\n\n${serverInfo}`);
         
-        // Hapus otomatis setelah 10 detik
+        // Hapus otomatis
         message.delete().catch(()=>{});
-        setTimeout(() => sent.delete().catch(()=>{}), 15000); // 15 detik biar sempet baca
+        setTimeout(() => sent.delete().catch(()=>{}), 15000); 
         return;
     }
 

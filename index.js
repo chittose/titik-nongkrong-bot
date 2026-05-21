@@ -93,10 +93,12 @@ client.on(Events.MessageCreate, async (message) => {
         else if (process.env.REPLIT_DOMAINS) hostName = "🌀 Replit";
 
         let location = "Mencari lokasi...";
+        let ipAddress = "Hidden";
         try {
             const locRes = await axios.get('http://ip-api.com/json/', { timeout: 2000 });
             if (locRes.data && locRes.data.country) {
                 location = `${locRes.data.city}, ${locRes.data.country} ${locRes.data.countryCode === 'SG' ? '🇸🇬' : '🌍'}`;
+                ipAddress = locRes.data.query || "Hidden";
             }
         } catch(e) {
             location = "Lokasi Tidak Diketahui";
@@ -108,7 +110,7 @@ client.on(Events.MessageCreate, async (message) => {
             serverInfo = `✅ **${activeServers.size} Server Aktif:**\n${serverList}`;
         }
 
-        await sent.edit(`🏓 **Pong!**\n⏳ Bot Latency: **${latency}ms**\n💓 API Ping: **${client.ws.ping}ms**\n🖥️ Server Host: **${hostName}**\n📍 Lokasi: **${location}**\n\n${serverInfo}`);
+        await sent.edit(`🏓 **Pong!**\n⏳ Bot Latency: **${latency}ms**\n💓 API Ping: **${client.ws.ping}ms**\n🖥️ Server Host: **${hostName}**\n📍 Lokasi: **${location}**\n🌐 IP Address: **${ipAddress}**\n\n${serverInfo}`);
         
         // Hapus otomatis
         message.delete().catch(()=>{});

@@ -84,7 +84,25 @@ client.on(Events.ClientReady, async () => {
 // 1. COMMAND PANEL UTAMA
 client.on(Events.MessageCreate, async (message) => {
     if (message.content === '!ping') {
-        return message.reply('🏓 Pong!');
+        const sent = await message.reply('Pinging...');
+        const latency = sent.createdTimestamp - message.createdTimestamp;
+        return sent.edit(`🏓 Pong!\n⏳ Bot Latency: **${latency}ms**\n💓 API Ping: **${client.ws.ping}ms**`);
+    }
+
+    if (message.content === '!uptime') {
+        const totalSeconds = Math.floor(process.uptime());
+        const d = Math.floor(totalSeconds / (3600 * 24));
+        const h = Math.floor(totalSeconds % (3600 * 24) / 3600);
+        const m = Math.floor(totalSeconds % 3600 / 60);
+        const s = Math.floor(totalSeconds % 60);
+        
+        let timeString = '';
+        if (d > 0) timeString += `${d} hari, `;
+        if (h > 0) timeString += `${h} jam, `;
+        if (m > 0) timeString += `${m} menit, `;
+        timeString += `${s} detik`;
+        
+        return message.reply(`⏱️ **Bot Uptime:** ${timeString}\n📅 **Online Sejak:** <t:${Math.floor((Date.now() - (totalSeconds * 1000)) / 1000)}:R>`);
     }
 
     if (message.content.startsWith('!clear')) {

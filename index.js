@@ -16,7 +16,8 @@ app.use(express.json());
 
 app.post('/api/heartbeat', (req, res) => {
     const authHeader = req.headers['authorization'];
-    if (authHeader !== process.env.BOT_SECRET) {
+    const expectedSecret = process.env.BOT_SECRET || "NongkrongSuperAman2026";
+    if (authHeader !== expectedSecret) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
 

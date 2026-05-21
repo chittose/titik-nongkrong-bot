@@ -45,17 +45,6 @@ app.get('/ping', (req, res) => res.send('pong'));
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
     console.log(`✅ Web API Server ready on port ${port}.`);
-    const SELF_URL = process.env.RAILWAY_PUBLIC_DOMAIN
-        ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}/ping`
-        : process.env.RENDER_EXTERNAL_URL
-            ? `${process.env.RENDER_EXTERNAL_URL}/ping`
-            : process.env.REPLIT_DOMAINS
-                ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}/ping`
-                : `http://localhost:${port}/ping`;
-    setInterval(() => {
-        axios.get(SELF_URL).catch(() => {});
-    }, 4 * 60 * 1000);
-    console.log(`🔄 Auto-ping aktif → ${SELF_URL} setiap 4 menit`);
 });
 
 // --- DISCORD BOT SETUP ---

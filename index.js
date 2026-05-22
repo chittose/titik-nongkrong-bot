@@ -78,6 +78,27 @@ app.post('/api/saweria', async (req, res) => {
             );
 
             console.log(`[Saweria] Berhasil meneruskan donasi dari ${donator} (Rp${amount}) ke Roblox!`);
+
+            // --- KIRIM NOTIFIKASI KE DISCORD ---
+            try {
+                const logChannel = client.channels.cache.get(process.env.LOG_CHANNEL_ID);
+                if (logChannel) {
+                    const embed = new EmbedBuilder()
+                        .setTitle('🎉 DONASI SAWERIA MASUK! 🎉')
+                        .setColor('#FBAF3B')
+                        .addFields(
+                            { name: '👤 Donatur', value: `**${donator}**`, inline: true },
+                            { name: '💰 Jumlah', value: `**Rp ${amount.toLocaleString('id-ID')}**`, inline: true },
+                            { name: '✉️ Pesan', value: message ? `"${message}"` : '*Tidak ada pesan*', inline: false }
+                        )
+                        .setTimestamp()
+                        .setFooter({ text: 'Titik Nongkrong x Saweria' });
+
+                    await logChannel.send({ embeds: [embed] });
+                }
+            } catch (discordErr) {
+                console.error("[Saweria DEBUG] Gagal kirim notif ke Discord:", discordErr.message);
+            }
         }
 
         res.status(200).send('OK');

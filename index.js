@@ -88,8 +88,9 @@ app.post('/api/saweria', async (req, res) => {
 
             // --- KIRIM NOTIFIKASI KE DISCORD ---
             try {
-                const logChannel = client.channels.cache.get(process.env.LOG_CHANNEL_ID);
-                if (logChannel) {
+                // Menggunakan Channel ID spesifik yang diminta untuk Donasi
+                const donationChannel = client.channels.cache.get("1507361332582678578") || client.channels.cache.get(process.env.LOG_CHANNEL_ID);
+                if (donationChannel) {
                     const embed = new EmbedBuilder()
                         .setTitle('🎉 DONASI SAWERIA MASUK! 🎉')
                         .setColor('#FBAF3B')
@@ -101,7 +102,7 @@ app.post('/api/saweria', async (req, res) => {
                         .setTimestamp()
                         .setFooter({ text: 'Titik Nongkrong x Saweria' });
 
-                    await logChannel.send({ embeds: [embed] });
+                    await donationChannel.send({ embeds: [embed] });
                 }
             } catch (discordErr) {
                 console.error("[Saweria DEBUG] Gagal kirim notif ke Discord:", discordErr.message);

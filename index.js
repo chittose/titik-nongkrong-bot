@@ -50,27 +50,34 @@ app.post('/api/saweria', async (req, res) => {
         const payload = req.body;
         console.log("[Saweria DEBUG] Incoming Webhook Payload:\n", JSON.stringify(payload, null, 2));
         
-        let donator = "Seseorang";
+        let donator = "Seseorang (Test)";
         let amount = 0;
-        let message = "";
+        let message = "Test Notifikasi";
 
-        // Format Saweria biasanya di dalam object 'data' jika typenya 'donation'
-        if (payload.data && payload.type === 'donation') {
+        // Coba baca dari object 'data' (format baru Saweria)
+        if (payload.data) {
             donator = payload.data.donator_name || donator;
-            amount = payload.data.amount_raw || payload.data.amount || 0;
-            message = payload.data.message || "";
-        } else if (payload.donator_name) {
+            amount = parseInt(payload.data.amount_raw) || parseInt(payload.data.amount) || 0;
+            message = payload.data.message || message;
+        } 
+        // Fallback kalau langsung di root (format lama/alternatif)
+        else if (payload.donator_name || payload.amount || payload.message) {
             donator = payload.donator_name || donator;
-            amount = payload.amount_raw || payload.amount || 0;
-            message = payload.message || "";
+            amount = parseInt(payload.amount_raw) || parseInt(payload.amount) || 0;
+            message = payload.message || message;
         }
 
-        if (amount > 0) {
-            const messagingPayload = {
-                Donator: donator,
-                Amount: amount,
-                Message: message
-            };
+        // Kalau webhook diklik dari tombol "Munculkan Notifikasi" kadang amount nya kosong,
+        // Kita paksa set amount ke 10000 agar tetap muncul di layar.
+        if (amount === 0) {
+            amount = 10000;
+        }
+
+        const messagingPayload = {
+            Donator: donator,
+            Amount: amount,
+            Message: message
+        };
 
             await axios.post(`https://apis.roblox.com/messaging-service/v1/universes/${UNIVERSE_ID}/topics/SaweriaDonation`, 
                 { message: JSON.stringify(messagingPayload) }, 

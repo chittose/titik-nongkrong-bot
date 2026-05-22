@@ -48,6 +48,8 @@ app.get('/ping', (req, res) => res.send('pong'));
 app.post('/api/saweria', async (req, res) => {
     try {
         const payload = req.body;
+        console.log("[Saweria DEBUG] Incoming Webhook Payload:\n", JSON.stringify(payload, null, 2));
+        
         let donator = "Seseorang";
         let amount = 0;
         let message = "";

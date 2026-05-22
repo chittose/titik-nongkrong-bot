@@ -106,7 +106,6 @@ app.post('/api/saweria', async (req, res) => {
             } catch (discordErr) {
                 console.error("[Saweria DEBUG] Gagal kirim notif ke Discord:", discordErr.message);
             }
-        }
 
         res.status(200).send('OK');
     } catch (e) {

@@ -43,6 +43,47 @@ setInterval(() => {
 
 app.get('/', (req, res) => res.send('Titik Nongkrong API is Online!'));
 app.get('/ping', (req, res) => res.send('pong'));
+
+// --- SAWERIA WEBHOOK ENDPOINT ---
+app.post('/api/saweria', async (req, res) => {
+    try {
+        const payload = req.body;
+        let donator = "Seseorang";
+        let amount = 0;
+        let message = "";
+
+        // Format Saweria biasanya di dalam object 'data' jika typenya 'donation'
+        if (payload.data && payload.type === 'donation') {
+            donator = payload.data.donator_name || donator;
+            amount = payload.data.amount_raw || payload.data.amount || 0;
+            message = payload.data.message || "";
+        } else if (payload.donator_name) {
+            donator = payload.donator_name || donator;
+            amount = payload.amount_raw || payload.amount || 0;
+            message = payload.message || "";
+        }
+
+        if (amount > 0) {
+            const messagingPayload = {
+                Donator: donator,
+                Amount: amount,
+                Message: message
+            };
+
+            await axios.post(`https://apis.roblox.com/messaging-service/v1/universes/${UNIVERSE_ID}/topics/SaweriaDonation`, 
+                { message: JSON.stringify(messagingPayload) }, 
+                { headers: { 'x-api-key': ROBLOX_API_KEY, 'Content-Type': 'application/json' }}
+            );
+
+            console.log(`[Saweria] Berhasil meneruskan donasi dari ${donator} (Rp${amount}) ke Roblox!`);
+        }
+
+        res.status(200).send('OK');
+    } catch (e) {
+        console.error('[Saweria] Gagal meneruskan ke Roblox:', e.response ? e.response.data : e.message);
+        res.status(500).send('Error');
+    }
+});
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
     console.log(`✅ Web API Server ready on port ${port}.`);

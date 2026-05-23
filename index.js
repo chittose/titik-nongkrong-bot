@@ -9,6 +9,7 @@ const express = require('express');
 // --- SERVER DATABASE ---
 const activeServers = new Map();
 let knownTools = new Set(); // Menyimpan daftar tools dari Roblox
+let knownGamepasses = new Map(); // name -> id
 
 // --- WEB SERVER & API UNTUK ROBLOX ---
 const app = express();
@@ -21,15 +22,18 @@ app.post('/api/heartbeat', (req, res) => {
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const { jobId, players, tools } = req.body;
+    const { jobId, players, tools, gamepasses } = req.body;
 
     activeServers.set(jobId, { players, lastSeen: Date.now() });
 
     if (tools && Array.isArray(tools)) {
         tools.forEach(t => knownTools.add(t));
     }
+    if (gamepasses && Array.isArray(gamepasses)) {
+        gamepasses.forEach(gp => knownGamepasses.set(gp.name, gp.id));
+    }
 
-    console.log(`[Heartbeat] JobId: ${jobId} | Players: ${players.length} | Tools: ${tools ? tools.length : 0}`);
+    console.log(`[Heartbeat] JobId: ${jobId} | Players: ${players.length} | Tools: ${tools ? tools.length : 0} | Gamepasses: ${gamepasses ? gamepasses.length : 0}`);
 
     res.status(200).send('OK');
 });
@@ -291,6 +295,20 @@ client.on(Events.InteractionCreate, async (interaction) => {
             return;
         }
 
+        if (interaction.customId.startsWith('btn|fakedonate|')) {
+            const selectedJobId = interaction.customId.split('|')[2];
+            if (knownGamepasses.size === 0) {
+                return interaction.reply({ content: '⚠️ Belum ada data Gamepass dari server Roblox. Pastikan game sedang dimainkan.', ephemeral: true });
+            }
+            const gpOptions = Array.from(knownGamepasses.entries()).map(([name, id]) => ({
+                label: name, value: id.toString(), description: `Simulate gamepass: ${name}`
+            })).slice(0, 25);
+
+            const selectMenu = new StringSelectMenuBuilder().setCustomId(`select|fakedonate|${selectedJobId}`).setPlaceholder('Pilih Gamepass...').addOptions(gpOptions);
+            await interaction.reply({ content: 'Pilih Gamepass:', components: [new ActionRowBuilder().addComponents(selectMenu)], ephemeral: true });
+            return;
+        }
+
         const idParts = interaction.customId.split('|');
         if (idParts[0] !== 'btn') return;
 
@@ -316,13 +334,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_dispname').setLabel('Display Name (Kosongi jika abaikan)').setStyle(TextInputStyle.Short).setRequired(false)),
                 new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_rbtitle').setLabel('Rainbow Title? (Ketik: Ya/Tidak)').setStyle(TextInputStyle.Short).setRequired(false)),
                 new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_rbname').setLabel('Rainbow Name? (Ketik: Ya/Tidak)').setStyle(TextInputStyle.Short).setRequired(false))
-            );
-        }
-        else if (cmd==='fakedonate') {
-            m.setTitle('Fake Donate');
-            m.addComponents(
-                new ActionRowBuilder().addComponents(tIn()),
-                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_assetid').setLabel('Gamepass ID').setStyle(TextInputStyle.Short).setRequired(true))
             );
         }
 
@@ -388,6 +399,17 @@ client.on(Events.InteractionCreate, async (interaction) => {
             );
             await interaction.showModal(modal);
         }
+        else if (interaction.customId.startsWith('select|fakedonate|')) {
+            const selectedJobId = interaction.customId.split('|')[2];
+            const selectedGPId = interaction.values[0];
+            const selectedGPName = Array.from(knownGamepasses.entries()).find(x => x[1].toString() === selectedGPId)?.[0] || selectedGPId;
+
+            const modal = new ModalBuilder().setCustomId(`modalfakedonate|${selectedGPId}|${selectedJobId}`).setTitle(`Fake Donate: ${selectedGPName.substring(0,20)}`);
+            modal.addComponents(
+                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_target').setLabel('Username Target').setStyle(TextInputStyle.Short).setRequired(true))
+            );
+            await interaction.showModal(modal);
+        }
     }
 });
 
@@ -428,13 +450,15 @@ client.on(Events.InteractionCreate, async (interaction) => {
             p.RainbowTitle = rbT === 'ya' || rbT === 'yes' || rbT === 'y';
             p.RainbowName = rbN === 'ya' || rbN === 'yes' || rbN === 'y';
         }
-        else if (p.Command==='fakedonate') { 
-            p.AssetId = getVal('input_assetid'); 
-            p.AssetType = "GamePass"; 
-            p.Command = 'FakeDonate'; // Keep casing specific for FakeDonate since our Lua script expects it
-        }
 
         p.Command = p.Command.charAt(0).toUpperCase() + p.Command.slice(1);
+    }
+    else if (interaction.customId.startsWith('modalfakedonate|')) {
+        const parts = interaction.customId.split('|');
+        p.Command = 'FakeDonate';
+        p.AssetId = parts[1];
+        p.AssetType = "GamePass";
+        if (parts[2] && parts[2] !== 'GLOBAL') p.TargetJobId = parts[2];
     }
 
     try {

@@ -249,7 +249,8 @@ client.on(Events.MessageCreate, async (message) => {
         const row3 = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId('btn|item|GLOBAL').setLabel('🎁 Global Item').setStyle(ButtonStyle.Success),
             new ButtonBuilder().setCustomId('btn|broadcast|GLOBAL').setLabel('📢 Global Broadcast').setStyle(ButtonStyle.Primary),
-            new ButtonBuilder().setCustomId('btn|tag|GLOBAL').setLabel('🏷️ Global Set Tag/Name').setStyle(ButtonStyle.Primary)
+            new ButtonBuilder().setCustomId('btn|tag|GLOBAL').setLabel('🏷️ Global Set Tag/Name').setStyle(ButtonStyle.Primary),
+            new ButtonBuilder().setCustomId('btn|fakedonate|GLOBAL').setLabel('💸 Global Fake Donate').setStyle(ButtonStyle.Success)
         );
 
         await message.channel.send({ embeds: [embed], components: [row0, row1, row2, row3] });
@@ -317,6 +318,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_rbname').setLabel('Rainbow Name? (Ketik: Ya/Tidak)').setStyle(TextInputStyle.Short).setRequired(false))
             );
         }
+        else if (cmd==='fakedonate') {
+            m.setTitle('Fake Donate');
+            m.addComponents(
+                new ActionRowBuilder().addComponents(tIn()),
+                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_assetid').setLabel('Gamepass ID').setStyle(TextInputStyle.Short).setRequired(true))
+            );
+        }
 
         await interaction.showModal(m);
     }
@@ -344,7 +352,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
             );
             const row3 = new ActionRowBuilder().addComponents(
                 new ButtonBuilder().setCustomId(`btn|broadcast|${selectedJobId}`).setLabel('📢 Server Broadcast').setStyle(ButtonStyle.Primary),
-                new ButtonBuilder().setCustomId(`btn|tag|${selectedJobId}`).setLabel('🏷️ Server Tag/Name').setStyle(ButtonStyle.Primary)
+                new ButtonBuilder().setCustomId(`btn|tag|${selectedJobId}`).setLabel('🏷️ Server Tag/Name').setStyle(ButtonStyle.Primary),
+                new ButtonBuilder().setCustomId(`btn|fakedonate|${selectedJobId}`).setLabel('💸 Server Fake Donate').setStyle(ButtonStyle.Success)
             );
 
             await interaction.editReply({ content: null, embeds: [embed], components: [row1, row2, row3] });
@@ -418,6 +427,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
             let rbN = (getVal('input_rbname') || "").toLowerCase();
             p.RainbowTitle = rbT === 'ya' || rbT === 'yes' || rbT === 'y';
             p.RainbowName = rbN === 'ya' || rbN === 'yes' || rbN === 'y';
+        }
+        else if (p.Command==='fakedonate') { 
+            p.AssetId = getVal('input_assetid'); 
+            p.AssetType = "GamePass"; 
+            p.Command = 'FakeDonate'; // Keep casing specific for FakeDonate since our Lua script expects it
         }
 
         p.Command = p.Command.charAt(0).toUpperCase() + p.Command.slice(1);

@@ -253,8 +253,7 @@ client.on(Events.MessageCreate, async (message) => {
         const row3 = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId('btn|item|GLOBAL').setLabel('🎁 Global Item').setStyle(ButtonStyle.Success),
             new ButtonBuilder().setCustomId('btn|broadcast|GLOBAL').setLabel('📢 Global Broadcast').setStyle(ButtonStyle.Primary),
-            new ButtonBuilder().setCustomId('btn|tag|GLOBAL').setLabel('🏷️ Global Set Tag/Name').setStyle(ButtonStyle.Primary),
-            new ButtonBuilder().setCustomId('btn|fakedonate|GLOBAL').setLabel('💸 Global Fake Donate').setStyle(ButtonStyle.Success)
+            new ButtonBuilder().setCustomId('btn|tag|GLOBAL').setLabel('🏷️ Global Set Tag/Name').setStyle(ButtonStyle.Primary)
         );
 
         await message.channel.send({ embeds: [embed], components: [row0, row1, row2, row3] });
@@ -295,19 +294,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
             return;
         }
 
-        if (interaction.customId.startsWith('btn|fakedonate|')) {
-            const selectedJobId = interaction.customId.split('|')[2];
-            if (knownGamepasses.size === 0) {
-                return interaction.reply({ content: '⚠️ Belum ada data Gamepass dari server Roblox. Pastikan game sedang dimainkan.', ephemeral: true });
-            }
-            const gpOptions = Array.from(knownGamepasses.entries()).map(([name, id]) => ({
-                label: name, value: id.toString(), description: `Simulate gamepass: ${name}`
-            })).slice(0, 25);
 
-            const selectMenu = new StringSelectMenuBuilder().setCustomId(`select|fakedonate|${selectedJobId}`).setPlaceholder('Pilih Gamepass...').addOptions(gpOptions);
-            await interaction.reply({ content: 'Pilih Gamepass:', components: [new ActionRowBuilder().addComponents(selectMenu)], ephemeral: true });
-            return;
-        }
 
         const idParts = interaction.customId.split('|');
         if (idParts[0] !== 'btn') return;
@@ -363,8 +350,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
             );
             const row3 = new ActionRowBuilder().addComponents(
                 new ButtonBuilder().setCustomId(`btn|broadcast|${selectedJobId}`).setLabel('📢 Server Broadcast').setStyle(ButtonStyle.Primary),
-                new ButtonBuilder().setCustomId(`btn|tag|${selectedJobId}`).setLabel('🏷️ Server Tag/Name').setStyle(ButtonStyle.Primary),
-                new ButtonBuilder().setCustomId(`btn|fakedonate|${selectedJobId}`).setLabel('💸 Server Fake Donate').setStyle(ButtonStyle.Success)
+                new ButtonBuilder().setCustomId(`btn|tag|${selectedJobId}`).setLabel('🏷️ Server Tag/Name').setStyle(ButtonStyle.Primary)
             );
 
             await interaction.editReply({ content: null, embeds: [embed], components: [row1, row2, row3] });
@@ -399,17 +385,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
             );
             await interaction.showModal(modal);
         }
-        else if (interaction.customId.startsWith('select|fakedonate|')) {
-            const selectedJobId = interaction.customId.split('|')[2];
-            const selectedGPId = interaction.values[0];
-            const selectedGPName = Array.from(knownGamepasses.entries()).find(x => x[1].toString() === selectedGPId)?.[0] || selectedGPId;
 
-            const modal = new ModalBuilder().setCustomId(`modalfakedonate|${selectedGPId}|${selectedJobId}`).setTitle(`Fake Donate: ${selectedGPName.substring(0,20)}`);
-            modal.addComponents(
-                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_target').setLabel('Username Target').setStyle(TextInputStyle.Short).setRequired(true))
-            );
-            await interaction.showModal(modal);
-        }
     }
 });
 
@@ -453,13 +429,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
         p.Command = p.Command.charAt(0).toUpperCase() + p.Command.slice(1);
     }
-    else if (interaction.customId.startsWith('modalfakedonate|')) {
-        const parts = interaction.customId.split('|');
-        p.Command = 'FakeDonate';
-        p.AssetId = parts[1];
-        p.AssetType = "GamePass";
-        if (parts[2] && parts[2] !== 'GLOBAL') p.TargetJobId = parts[2];
-    }
+
 
     try {
         await axios.post(`https://apis.roblox.com/messaging-service/v1/universes/${UNIVERSE_ID}/topics/DiscordAdminCommands`, 

@@ -318,9 +318,16 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 return interaction.reply({ content: `⚠️ Tidak ada item kategori **${type}** yang tersedia saat ini.`, ephemeral: true });
             }
             
-            const toolOptions = filteredItems.map(item => ({
-                label: item, value: item, description: `Kirim ${type} ${item}`
-            })).slice(0, 25);
+            const toolOptions = filteredItems.map(item => {
+                let val = item;
+                if (type === 'rod') val = 'Rod: ' + item;
+                else if (type === 'fish') val = 'Fish: ' + item;
+                return {
+                    label: item.substring(0, 100), 
+                    value: val.substring(0, 100), 
+                    description: `Kirim ${type} ${item}`.substring(0, 100)
+                };
+            }).slice(0, 25);
 
             const selectMenu = new StringSelectMenuBuilder().setCustomId(`select|tool|${selectedJobId}`).setPlaceholder(`Pilih ${type.toUpperCase()} yang akan diberikan...`).addOptions(toolOptions);
             await interaction.reply({ content: `Pilih ${type.toUpperCase()}:`, components: [new ActionRowBuilder().addComponents(selectMenu)], ephemeral: true });

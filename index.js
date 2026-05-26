@@ -9,6 +9,8 @@ const express = require('express');
 // --- SERVER DATABASE ---
 const activeServers = new Map();
 let knownTools = new Set(); // Menyimpan daftar tools dari Roblox
+let knownRods = new Set(); // Menyimpan daftar rods dari Roblox
+let knownFish = new Set(); // Menyimpan daftar fish dari Roblox
 let knownGamepasses = new Map(); // name -> id
 
 // --- WEB SERVER & API UNTUK ROBLOX ---
@@ -22,7 +24,7 @@ app.post('/api/heartbeat', (req, res) => {
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const { jobId, players, tools, gamepasses } = req.body;
+    const { jobId, players, tools, gamepasses, rods, fish } = req.body;
 
     activeServers.set(jobId, { players, lastSeen: Date.now() });
 
@@ -32,8 +34,14 @@ app.post('/api/heartbeat', (req, res) => {
     if (gamepasses && Array.isArray(gamepasses)) {
         gamepasses.forEach(gp => knownGamepasses.set(gp.name, gp.id));
     }
+    if (rods && Array.isArray(rods)) {
+        rods.forEach(r => knownRods.add(r));
+    }
+    if (fish && Array.isArray(fish)) {
+        fish.forEach(f => knownFish.add(f));
+    }
 
-    console.log(`[Heartbeat] JobId: ${jobId} | Players: ${players.length} | Tools: ${tools ? tools.length : 0} | Gamepasses: ${gamepasses ? gamepasses.length : 0}`);
+    console.log(`[Heartbeat] JobId: ${jobId} | Players: ${players.length} | Tools: ${tools ? tools.length : 0} | Gamepasses: ${gamepasses ? gamepasses.length : 0} | Rods: ${rods ? rods.length : 0} | Fish: ${fish ? fish.length : 0}`);
 
     res.status(200).send('OK');
 });
@@ -287,23 +295,31 @@ client.on(Events.InteractionCreate, async (interaction) => {
             const type = parts[1]; // 'item', 'rod', 'fish'
             const selectedJobId = parts[2];
             
-            if (knownTools.size === 0) {
-                return interaction.reply({ content: '⚠️ Belum ada data Tools dari server Roblox. Pastikan game sedang dimainkan.', ephemeral: true });
-            }
+            let filteredItems = [];
             
-            let filteredTools = Array.from(knownTools);
             if (type === 'rod') {
-                filteredTools = filteredTools.filter(t => t.toLowerCase().includes('rod'));
+                if (knownRods.size === 0) {
+                    return interaction.reply({ content: '⚠️ Belum ada data Rod dari server Roblox. Pastikan game sedang dimainkan.', ephemeral: true });
+                }
+                filteredItems = Array.from(knownRods);
             } else if (type === 'fish') {
-                filteredTools = filteredTools.filter(t => !t.toLowerCase().includes('rod') && !t.toLowerCase().includes('lasso') && !t.toLowerCase().includes('camera') && !t.toLowerCase().includes('stick'));
+                if (knownFish.size === 0) {
+                    return interaction.reply({ content: '⚠️ Belum ada data Fish dari server Roblox. Pastikan game sedang dimainkan.', ephemeral: true });
+                }
+                filteredItems = Array.from(knownFish);
+            } else {
+                if (knownTools.size === 0) {
+                    return interaction.reply({ content: '⚠️ Belum ada data Tools dari server Roblox. Pastikan game sedang dimainkan.', ephemeral: true });
+                }
+                filteredItems = Array.from(knownTools);
             }
             
-            if (filteredTools.length === 0) {
+            if (filteredItems.length === 0) {
                 return interaction.reply({ content: `⚠️ Tidak ada item kategori **${type}** yang tersedia saat ini.`, ephemeral: true });
             }
             
-            const toolOptions = filteredTools.map(tool => ({
-                label: tool, value: tool, description: `Kirim ${type} ${tool}`
+            const toolOptions = filteredItems.map(item => ({
+                label: item, value: item, description: `Kirim ${type} ${item}`
             })).slice(0, 25);
 
             const selectMenu = new StringSelectMenuBuilder().setCustomId(`select|tool|${selectedJobId}`).setPlaceholder(`Pilih ${type.toUpperCase()} yang akan diberikan...`).addOptions(toolOptions);

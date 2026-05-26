@@ -252,8 +252,10 @@ client.on(Events.MessageCreate, async (message) => {
         );
         const row3 = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId('btn|item|GLOBAL').setLabel('🎁 Global Item').setStyle(ButtonStyle.Success),
-            new ButtonBuilder().setCustomId('btn|broadcast|GLOBAL').setLabel('📢 Global Broadcast').setStyle(ButtonStyle.Primary),
-            new ButtonBuilder().setCustomId('btn|tag|GLOBAL').setLabel('🏷️ Global Set Tag/Name').setStyle(ButtonStyle.Primary)
+            new ButtonBuilder().setCustomId('btn|rod|GLOBAL').setLabel('🎣 Global Rod').setStyle(ButtonStyle.Primary),
+            new ButtonBuilder().setCustomId('btn|fish|GLOBAL').setLabel('🐟 Global Fish').setStyle(ButtonStyle.Primary),
+            new ButtonBuilder().setCustomId('btn|broadcast|GLOBAL').setLabel('📢 Global Bcast').setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId('btn|tag|GLOBAL').setLabel('🏷️ Global Tag').setStyle(ButtonStyle.Secondary)
         );
 
         await message.channel.send({ embeds: [embed], components: [row0, row1, row2, row3] });
@@ -280,17 +282,32 @@ client.on(Events.InteractionCreate, async (interaction) => {
             return;
         }
 
-        if (interaction.customId.startsWith('btn|item|')) {
-            const selectedJobId = interaction.customId.split('|')[2];
+        if (interaction.customId.startsWith('btn|item|') || interaction.customId.startsWith('btn|rod|') || interaction.customId.startsWith('btn|fish|')) {
+            const parts = interaction.customId.split('|');
+            const type = parts[1]; // 'item', 'rod', 'fish'
+            const selectedJobId = parts[2];
+            
             if (knownTools.size === 0) {
                 return interaction.reply({ content: '⚠️ Belum ada data Tools dari server Roblox. Pastikan game sedang dimainkan.', ephemeral: true });
             }
-            const toolOptions = Array.from(knownTools).map(tool => ({
-                label: tool, value: tool, description: `Kirim item ${tool}`
+            
+            let filteredTools = Array.from(knownTools);
+            if (type === 'rod') {
+                filteredTools = filteredTools.filter(t => t.toLowerCase().includes('rod'));
+            } else if (type === 'fish') {
+                filteredTools = filteredTools.filter(t => !t.toLowerCase().includes('rod') && !t.toLowerCase().includes('lasso') && !t.toLowerCase().includes('camera') && !t.toLowerCase().includes('stick'));
+            }
+            
+            if (filteredTools.length === 0) {
+                return interaction.reply({ content: `⚠️ Tidak ada item kategori **${type}** yang tersedia saat ini.`, ephemeral: true });
+            }
+            
+            const toolOptions = filteredTools.map(tool => ({
+                label: tool, value: tool, description: `Kirim ${type} ${tool}`
             })).slice(0, 25);
 
-            const selectMenu = new StringSelectMenuBuilder().setCustomId(`select|tool|${selectedJobId}`).setPlaceholder('Pilih Tool yang akan diberikan...').addOptions(toolOptions);
-            await interaction.reply({ content: 'Pilih Tool/Item:', components: [new ActionRowBuilder().addComponents(selectMenu)], ephemeral: true });
+            const selectMenu = new StringSelectMenuBuilder().setCustomId(`select|tool|${selectedJobId}`).setPlaceholder(`Pilih ${type.toUpperCase()} yang akan diberikan...`).addOptions(toolOptions);
+            await interaction.reply({ content: `Pilih ${type.toUpperCase()}:`, components: [new ActionRowBuilder().addComponents(selectMenu)], ephemeral: true });
             return;
         }
 
@@ -349,8 +366,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 new ButtonBuilder().setCustomId(`btn|item|${selectedJobId}`).setLabel('🎁 Server Item').setStyle(ButtonStyle.Success)
             );
             const row3 = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId(`btn|broadcast|${selectedJobId}`).setLabel('📢 Server Broadcast').setStyle(ButtonStyle.Primary),
-                new ButtonBuilder().setCustomId(`btn|tag|${selectedJobId}`).setLabel('🏷️ Server Tag/Name').setStyle(ButtonStyle.Primary)
+                new ButtonBuilder().setCustomId(`btn|rod|${selectedJobId}`).setLabel('🎣 Server Rod').setStyle(ButtonStyle.Primary),
+                new ButtonBuilder().setCustomId(`btn|fish|${selectedJobId}`).setLabel('🐟 Server Fish').setStyle(ButtonStyle.Primary),
+                new ButtonBuilder().setCustomId(`btn|broadcast|${selectedJobId}`).setLabel('📢 Srv Bcast').setStyle(ButtonStyle.Secondary),
+                new ButtonBuilder().setCustomId(`btn|tag|${selectedJobId}`).setLabel('🏷️ Srv Tag').setStyle(ButtonStyle.Secondary)
             );
 
             await interaction.editReply({ content: null, embeds: [embed], components: [row1, row2, row3] });

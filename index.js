@@ -266,7 +266,7 @@ client.on(Events.MessageCreate, async (message) => {
             new ButtonBuilder().setCustomId('btn|tag|GLOBAL').setLabel('🏷️ Global Tag').setStyle(ButtonStyle.Secondary)
         );
         const row4 = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('btn|redeemcode|GLOBAL').setLabel('🎟️ Create Redeem Code').setStyle(ButtonStyle.Success)
+            new ButtonBuilder().setCustomId('btn|start_redeem|GLOBAL').setLabel('🎟️ Create Redeem Code').setStyle(ButtonStyle.Success)
         );
 
         await message.channel.send({ embeds: [embed], components: [row0, row1, row2, row3, row4] });
@@ -339,6 +339,53 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
 
 
+        if (interaction.customId.startsWith('btn|start_redeem')) {
+            let allItems = [...knownTools, ...knownRods, ...knownFish];
+            if (allItems.length === 0) {
+                let m = new ModalBuilder().setCustomId(`modal|redeemcode|GLOBAL`).setTitle('Create Redeem Code');
+                m.addComponents(
+                    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_code').setLabel('Kode Redeem').setStyle(TextInputStyle.Short).setRequired(true)),
+                    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_max').setLabel('Max Users (Angka)').setStyle(TextInputStyle.Short).setRequired(true).setValue("100")),
+                    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_coins').setLabel('Coins (0 jika tidak ada)').setStyle(TextInputStyle.Short).setRequired(true).setValue("0")),
+                    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_items').setLabel('Items (Koma dipisah)').setStyle(TextInputStyle.Paragraph).setRequired(false).setValue(""))
+                );
+                await interaction.showModal(m);
+                return;
+            }
+            
+            const options = allItems.map(item => ({
+                label: item.substring(0, 100),
+                value: item.substring(0, 100)
+            })).slice(0, 25);
+
+            const selectMenu = new StringSelectMenuBuilder()
+                .setCustomId('select|redeem_items')
+                .setPlaceholder('Pilih Item (Bisa pilih lebih dari 1)...')
+                .setMinValues(1)
+                .setMaxValues(Math.min(10, options.length))
+                .addOptions(options);
+
+            const row1 = new ActionRowBuilder().addComponents(selectMenu);
+            const row2 = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId('btn|skip_redeem_items').setLabel('Skip (Tanpa Item)').setStyle(ButtonStyle.Secondary)
+            );
+
+            await interaction.reply({ content: 'Pilih item yang akan dimasukkan ke Redeem Code:', components: [row1, row2], ephemeral: true });
+            return;
+        }
+
+        if (interaction.customId === 'btn|skip_redeem_items') {
+            let m = new ModalBuilder().setCustomId(`modal|redeemcode|GLOBAL`).setTitle('Create Redeem Code');
+            m.addComponents(
+                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_code').setLabel('Kode Redeem').setStyle(TextInputStyle.Short).setRequired(true)),
+                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_max').setLabel('Max Users (Angka)').setStyle(TextInputStyle.Short).setRequired(true).setValue("100")),
+                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_coins').setLabel('Coins (0 jika tidak ada)').setStyle(TextInputStyle.Short).setRequired(true).setValue("0")),
+                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_items').setLabel('Items (Koma dipisah)').setStyle(TextInputStyle.Paragraph).setRequired(false).setValue(""))
+            );
+            await interaction.showModal(m);
+            return;
+        }
+
         const idParts = interaction.customId.split('|');
         if (idParts[0] !== 'btn') return;
 
@@ -364,15 +411,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_dispname').setLabel('Display Name (Kosongi jika abaikan)').setStyle(TextInputStyle.Short).setRequired(false)),
                 new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_rbtitle').setLabel('Rainbow Title? (Ketik: Ya/Tidak)').setStyle(TextInputStyle.Short).setRequired(false)),
                 new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_rbname').setLabel('Rainbow Name? (Ketik: Ya/Tidak)').setStyle(TextInputStyle.Short).setRequired(false))
-            );
-        }
-        else if (cmd==='redeemcode') {
-            m.setTitle('Create Redeem Code');
-            m.addComponents(
-                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_code').setLabel('Kode Redeem').setStyle(TextInputStyle.Short).setRequired(true)),
-                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_max').setLabel('Max Users (Angka)').setStyle(TextInputStyle.Short).setRequired(true).setValue("100")),
-                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_coins').setLabel('Coins (0 jika tidak ada)').setStyle(TextInputStyle.Short).setRequired(true).setValue("0")),
-                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_items').setLabel('Items (Koma dipisah, cth: Basic Rod,Hiu)').setStyle(TextInputStyle.Paragraph).setRequired(false))
             );
         }
 
@@ -408,6 +446,17 @@ client.on(Events.InteractionCreate, async (interaction) => {
             );
 
             await interaction.editReply({ content: null, embeds: [embed], components: [row1, row2, row3] });
+        }
+        else if (interaction.customId === 'select|redeem_items') {
+            const selectedItems = interaction.values.join(',');
+            let m = new ModalBuilder().setCustomId(`modal|redeemcode|GLOBAL`).setTitle('Create Redeem Code');
+            m.addComponents(
+                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_code').setLabel('Kode Redeem').setStyle(TextInputStyle.Short).setRequired(true)),
+                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_max').setLabel('Max Users (Angka)').setStyle(TextInputStyle.Short).setRequired(true).setValue("100")),
+                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_coins').setLabel('Coins (0 jika tidak ada)').setStyle(TextInputStyle.Short).setRequired(true).setValue("0")),
+                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_items').setLabel('Items (Koma dipisah)').setStyle(TextInputStyle.Paragraph).setRequired(false).setValue(selectedItems))
+            );
+            await interaction.showModal(m);
         }
         else if (interaction.customId.startsWith('select|tool|')) {
             await interaction.deferUpdate();

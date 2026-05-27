@@ -265,8 +265,11 @@ client.on(Events.MessageCreate, async (message) => {
             new ButtonBuilder().setCustomId('btn|broadcast|GLOBAL').setLabel('📢 Global Bcast').setStyle(ButtonStyle.Secondary),
             new ButtonBuilder().setCustomId('btn|tag|GLOBAL').setLabel('🏷️ Global Tag').setStyle(ButtonStyle.Secondary)
         );
+        const row4 = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('btn|redeemcode|GLOBAL').setLabel('🎟️ Create Redeem Code').setStyle(ButtonStyle.Success)
+        );
 
-        await message.channel.send({ embeds: [embed], components: [row0, row1, row2, row3] });
+        await message.channel.send({ embeds: [embed], components: [row0, row1, row2, row3, row4] });
     }
 });
 
@@ -361,6 +364,15 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_dispname').setLabel('Display Name (Kosongi jika abaikan)').setStyle(TextInputStyle.Short).setRequired(false)),
                 new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_rbtitle').setLabel('Rainbow Title? (Ketik: Ya/Tidak)').setStyle(TextInputStyle.Short).setRequired(false)),
                 new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_rbname').setLabel('Rainbow Name? (Ketik: Ya/Tidak)').setStyle(TextInputStyle.Short).setRequired(false))
+            );
+        }
+        else if (cmd==='redeemcode') {
+            m.setTitle('Create Redeem Code');
+            m.addComponents(
+                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_code').setLabel('Kode Redeem').setStyle(TextInputStyle.Short).setRequired(true)),
+                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_max').setLabel('Max Users (Angka)').setStyle(TextInputStyle.Short).setRequired(true).setValue("100")),
+                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_coins').setLabel('Coins (0 jika tidak ada)').setStyle(TextInputStyle.Short).setRequired(true).setValue("0")),
+                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('input_items').setLabel('Items (Koma dipisah, cth: Basic Rod,Hiu)').setStyle(TextInputStyle.Paragraph).setRequired(false))
             );
         }
 
@@ -467,6 +479,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
             let rbN = (getVal('input_rbname') || "").toLowerCase();
             p.RainbowTitle = rbT === 'ya' || rbT === 'yes' || rbT === 'y';
             p.RainbowName = rbN === 'ya' || rbN === 'yes' || rbN === 'y';
+        }
+        else if (p.Command==='redeemcode') {
+            p.Code = getVal('input_code');
+            p.MaxUses = parseInt(getVal('input_max')) || 1;
+            p.Coins = parseInt(getVal('input_coins')) || 0;
+            p.Items = getVal('input_items') || "";
         }
 
         p.Command = p.Command.charAt(0).toUpperCase() + p.Command.slice(1);
